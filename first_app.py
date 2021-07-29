@@ -33,6 +33,48 @@ def combiner(input_files): # to combine files for blast
         output += string_data + '\n'
     return output
 
+def nohitsfile(cd,blast,hits,nohits): #this code creates 2 text files with queries of those that gave hits and those that didnt 
+    stringio = io.StringIO(cd.getvalue().decode("utf-8"))
+    cd = stringio.read()
+    stringio = io.StringIO(blast.getvalue().decode("utf-8"))
+    blast = stringio.read()
+
+    blastlist = blast.splitlines() 
+    cdlist = cd.split(">") 
+    hitsdata = []
+    nohitsdata = []
+    hitstext = ''
+    nohitstext = ''
+    output1 = ''
+    output2 = ''
+
+    for line,x in zip(blastlist,range(len(blastlist))):
+        if "Query=" in line:
+            if "***** No hits found *****" in blastlist[x+5:x+10]:
+                nohitsdata.append(blastlist[x])
+                nohitstext += blastlist[x] + "\n"
+            else:
+                hitsdata.append(blastlist[x])
+                hitstext += blastlist[x] + "\n"
+    
+    st.sidebar.write("number of no hits sequences = ",len(nohitsdata))
+    st.sidebar.write("number of hits sequences = ",len(hitsdata))
+
+    for line in cdlist:
+        if line[0:20] in nohitstext:
+            output1 += ">" + line + '\n'
+        else:
+            output2 += ">" + line + '\n'
+
+    output1 = output1[1:]
+
+    if hits is True and nohits is False:
+        st.sidebar.write("number of sequences in your result file= ",output2.count('>'))
+        return output2
+    elif nohits is True and hits is False:
+        st.sidebar.write("number of sequences in your result file= ",output1.count('>'))
+        return output1
+    
 ##################### MAIN TEXT ###################################
 
 st.title('Drug Discovery using Subtractive Genomics Analysis')
@@ -48,7 +90,7 @@ st.markdown("""
 - Perform clustering using CD-HIT to filter unique proteins
 - Perform Local blast with Human & Mouse
 - Perform Local blast with DEG database
-- Perform Blast with know drug targets to identify novel and non-novel proteins
+- Perform Blast with known drug targets to identify novel and non-novel proteins
 - Identify protein localization and structuralization
 """)
 st.subheader('How do I use this tool?')
@@ -57,13 +99,20 @@ st.info('If your target organism is Escherichia coli, go to https://www.ncbi.nlm
 "`STEP 2:` Perform clustering using CD-HIT"
 st.info('Go to: http://weizhong-lab.ucsd.edu/cdhit_suite/cgi-bin/index.cgi?cmd=cd-hit and load the Fasta file from step one. Set the sequence identity cut-off to 0.8 and leave the rest of the parameters to its default values. Give your mail address and click Submit!')
 "`STEP 3:` Perform Local blast with Human & Mouse protein data"
-st.info('Click here to get the combined Human & Mouse data you need to perform blast [insert link]. Perform local blast on your computer.')
+st.info('Click here to get the combined Human & Mouse data you need to perform blast [insert link]. Perform local blast on your computer. Using the results file, you can use the tool in the sidebar to get the sequences with no hits.')
+"`STEP 4:` Perform Local blast with DEG database"
+st.info('Click here to get the combined DEG data you need to perform blast [insert link]. Perform local blast on your computer. Using the results file, you can use the tool in the sidebar to get the sequences with hits.')
+"`STEP 5:` Identify novel and non-novel sequences"
+st.info('Click here to get the all the existing drug targets DEG data you need to perform blast [insert link].')
+"`STEP 6:` Local and functional analysis of the prospective sequences"
+st.info('We use tools like BUSCA (http://busca.biocomp.unibo.it/) and ')
 
 
 ######################### Sidebar ######################
 
 st.sidebar.title('Tools to help you!')
 
+#FILE SPLITTER
 with st.sidebar.header('File splitter (for step 2)'):
     uploaded_file = st.sidebar.file_uploader("To split files into smaller pieces of 50MB as required by the CD-HIT suite", type=['Fasta','txt'])
 
@@ -79,7 +128,7 @@ if st.sidebar.button('Split'):
 else:
     st.sidebar.write('`Upload input data in the sidebar to get started!`')
 
-
+#FILE COMBINER
 with st.sidebar.header('File combiner (for step 3)'):
     uploaded_files = st.sidebar.file_uploader("To combine the split files from CD HIT to perform Blast", type=['Fasta','txt'], accept_multiple_files=True)
 
@@ -89,3 +138,24 @@ if st.sidebar.button('Combine'):
 else:
     st.sidebar.write('`Upload input data in the sidebar to get started!`')
 
+#HITS / NO HITS IDENTIFIER
+with st.sidebar.header('Hits/No Hits identifier (for steps 3 and 4)'):
+    cdfile = st.sidebar.file_uploader("Drop your QUERY file here", type=['Fasta','txt'])
+    blastresultfile = st.sidebar.file_uploader("Drop your BLAST RESULT file here", type=['Fasta','txt'])
+
+st.sidebar.subheader("Choose which file you need")    
+hits, nohits = False, False
+if st.sidebar.checkbox("With HITS"):
+    hits = True
+if st.sidebar.checkbox("Without HITS"):
+    nohits = True
+    
+if st.sidebar.button('Result'):
+    if (nohits is True and hits is True) or (nohits is False and hits is False):
+        st.sidebar.write('OOPS! try choosing only one option')
+    else:
+        tmp_download_link = download_link(nohitsfile(cdfile,blastresultfile,hits,nohits), 'resut.txt', 'download your result file')
+        st.sidebar.markdown(tmp_download_link, unsafe_allow_html=True)
+else:
+    st.sidebar.write('`Upload input data in the sidebar to get started!`')
+    
