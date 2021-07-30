@@ -2,7 +2,7 @@ import streamlit as st
 import base64
 import pandas as pd
 import io
-import os, glob
+
 ##################### FUNCTIONS #####################
 
 def download_link(object_to_download, download_filename, download_link_text):   # Generates a link to download the given object_to_download.
