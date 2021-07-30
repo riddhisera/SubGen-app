@@ -1,12 +1,14 @@
 import streamlit as st
-import os
 import base64
 import pandas as pd
 import io
-
+import os, glob
 ##################### FUNCTIONS #####################
 
 def download_link(object_to_download, download_filename, download_link_text):   # Generates a link to download the given object_to_download.
+
+    if isinstance(object_to_download,pd.DataFrame):
+        object_to_download = object_to_download.to_csv(index=False)
     b64 = base64.b64encode(object_to_download.encode()).decode()
     return f'<a href="data:file/txt;base64,{b64}" download="{download_filename}">{download_link_text}</a>'
 
@@ -74,6 +76,11 @@ def nohitsfile(cd,blast,hits,nohits): #this code creates 2 text files with queri
     elif nohits is True and hits is False:
         st.sidebar.write("number of sequences in your result file= ",output1.count('>'))
         return output1
+
+def combcsv(input_files):
+    df_from_each_file = (pd.read_csv(f, sep=',') for f in input_files)
+    df_merged   = pd.concat(df_from_each_file, ignore_index=True)
+    return df_merged
     
 ##################### MAIN TEXT ###################################
 
@@ -103,10 +110,11 @@ st.info('Click here to get the combined Human & Mouse data you need to perform b
 "`STEP 4:` Perform Local blast with DEG database"
 st.info('Click here to get the combined DEG data you need to perform blast [insert link]. Perform local blast on your computer. Using the results file, you can use the tool in the sidebar to get the sequences with hits.')
 "`STEP 5:` Identify novel and non-novel sequences"
-st.info('Click here to get the all the existing drug targets DEG data you need to perform blast [insert link].')
+st.info('Asses the resulting proteins through BLASTp against FDA approved protein drug targets from DrugBank [link to data]. Using the results file, you can use the tool in the sidebar to get the sequences with hits or no hits.')
 "`STEP 6:` Local and functional analysis of the prospective sequences"
-st.info('We use tools like BUSCA (http://busca.biocomp.unibo.it/) and ')
+st.info('You can use tools like KEGG (https://www.genome.jp/kegg/) to analyze the metabolic pathways, BUSCA (http://busca.biocomp.unibo.it/) for predicting protein subcellular localization and eggNOG-mapper (http://eggnog-mapper.embl.de/) for the functional annotation of large sets of sequences.')
 
+"`FINAL:` Using the shortlisted potential drugs from above, you can perform a structure based analysis for further developmental stages."
 
 ######################### Sidebar ######################
 
@@ -158,4 +166,17 @@ if st.sidebar.button('Result'):
         st.sidebar.markdown(tmp_download_link, unsafe_allow_html=True)
 else:
     st.sidebar.write('`Upload input data in the sidebar to get started!`')
-    
+
+st.sidebar.title('Extra tools!')
+
+#OTHER TOOLS
+
+#CSV FILE COMBINER
+with st.sidebar.header('Combine your BUSCA results (csv) files here (for step 6)'):
+    csvfiles = st.sidebar.file_uploader("To combine the split csv files from BUSCA into one single csv file", type=['csv'], accept_multiple_files=True)
+
+if st.sidebar.button('Combine csv'):
+    tmp_download_link = download_link(combcsv(csvfiles), 'combinedfile.csv', 'download combined file')
+    st.sidebar.markdown(tmp_download_link, unsafe_allow_html=True)
+else:
+    st.sidebar.write('`Upload input data in the sidebar to get started!`')
