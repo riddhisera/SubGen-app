@@ -195,7 +195,7 @@ pyodbc @ file:///D:/bld/pyodbc_1625371780292/work
 pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_1608055815057/work
 pyparsing==2.4.7
 PyQt5==5.12.3
-PyQt5-sip==4.19.18
+PyQt5_sip==4.19.18
 PyQtChart==5.12
 PyQtWebEngine==5.12.1
 pyreadline @ file:///D:/bld/pyreadline_1611175364000/work
